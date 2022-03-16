@@ -93,8 +93,8 @@ printf:
 
         .bin
                 push edx
-                push dword bin_mask ;mask
-                push dword 1    ;shift offs
+                mov eax, bin_mask
+                mov ecx, 1
                 jmp .print_b
 
         .decimal
@@ -108,20 +108,19 @@ printf:
 
         .hex
                 push edx
-                push dword hex_mask ;mask
-                push dword 4    ;shift offs
+                mov eax, hex_mask ;mask
+                mov ecx, 4      ;shift offs
                 jmp .print_b
 
         .oct
                 push edx
-                push dword oct_mask ;mask
-                push dword 3    ;shift offs
+                mov eax, oct_mask ;mask
+                mov ecx, 3      ;shift offs
                 jmp .print_b
 
         .print_b        
-                push dword [ebp]        ;num
+                mov ebx, [ebp]
                 call itoaBin
-                add esp, 12
                 add ebp, 4
                 pop edx
                 jmp .end_choice
@@ -186,10 +185,6 @@ dropbuff:
 itoaBin:
                 ; push edx
                 push esi
-                mov eax, [esp + 16]       ;mask
-                mov ecx, [esp + 12]       ;ecx - shift offs
-                mov ebx, [esp + 8]        ;ebx - num
-
                 xor edx, edx
 
 
@@ -257,7 +252,7 @@ stringm             db "string", 0ah, 0
 octm                db "oct", 0ah, 0
 Text                db "", 0
 ; msg                 db "%s | %% %d %b %c", 0
-msg                 db "%h%o%b%d %s", 0
+msg                 db "%h", 0
 len             	equ $-msg	
 
 
