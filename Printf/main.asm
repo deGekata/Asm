@@ -98,10 +98,9 @@ printf:
                 jmp .print_b
 
         .decimal
-                push dword 12
-                push dword [ebp]
+                mov ebx, 10
+                mov eax, [ebp]
                 call itoad
-                add esp, 8
                 add ebp, 4
 
                 jmp .end_choice
@@ -214,9 +213,6 @@ itoaBin:
 delim:
 
 itoad
-
-                mov ebx, [esp + 8]              ;base of system
-                mov eax, [esp + 4]              ;number
                 push edx
                 
                 xor ecx, ecx
