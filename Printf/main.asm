@@ -98,7 +98,7 @@ printf:
                 jmp .print_b
 
         .decimal
-                push dword 10
+                push dword 12
                 push dword [ebp]
                 call itoad
                 add esp, 8
@@ -199,7 +199,7 @@ itoaBin:
 
                 .write_sym:
                 pop dword ebx
-                mov bl, [table_hex_symbols + ebx]
+                mov bl, [itoa_symbols_table + ebx]
 
                 mov [edi], bl
                 inc edi
@@ -232,7 +232,7 @@ itoad
 
                 .write_sym:
                 pop dword ebx
-                mov bl, [table_hex_symbols + ebx]       ;load char from table
+                mov bl, [itoa_symbols_table + ebx]       ;load char from table
                 mov [edi], bl                           ;mov char to memory
                 inc edi                                 ;inc buff ptr
                 dec ecx                                 ;now need to print 1 less sym
@@ -244,7 +244,7 @@ itoad
 
 
 section .data use32
-table_hex_symbols   db "0123456789ABCDEF"
+itoa_symbols_table   db "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 decm                db "/decm/", 0
 hexm                db "hexm", 0
 charm               db "charm", 0ah, 0
@@ -252,7 +252,7 @@ stringm             db "string", 0ah, 0
 octm                db "oct", 0ah, 0
 Text                db "", 0
 ; msg                 db "%s | %% %d %b %c", 0
-msg                 db "%h", 0
+msg                 db "%d", 0
 len             	equ $-msg	
 
 
