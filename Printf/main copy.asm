@@ -9,58 +9,114 @@
 
 NULL              EQU 0                         ; Constants
 STD_OUTPUT_HANDLE EQU -11
-STDOUT			equ		1
-STDIN			equ		2
 
+extern GetStdHandle                             ; Import external symbols
+extern WriteFile                                ; Windows API functions, not decorated
+extern ExitProcess   
+extern lstrlen 
+extern WriteConsoleA
 
-global std_printf
+global _printf_caller
 ; extern _printf
 ; extern __cputs
 ; extern _putchar
 
 section .text
 
+; _main:          
+;                 ; sub   RSP, 8                                   ; Align the stack to a multiple of 16 bytes
 
+;                 ; sub   RSP, 32                                  ; 32 bytes of shadow space
+;                 ; mov   ECX, STD_OUTPUT_HANDLE
+;                 ; call  GetStdHandle
+;                 ; mov   qword [REL StandardHandle], RAX
+;                 ; add   RSP, 32                                  ; Remove the 32 bytes
 
+;                 ; sub   RSP, 32 + 8 + 8                          ; Shadow space + 5th parameter + align stack
+;                 ;                                                 ; to a multiple of 16 bytes
+;                 ; mov rcx, Message
+;                 ; call lstrlen
+;                 ; mov   r8, RAX
+;                 ; mov   RCX, qword [REL StandardHandle]          ; 1st parameter
+;                 ; lea   RDX, [REL Message]                       ; 2nd parameter
+;                 ; ; mov   R8, MessageLength                        ; 3rd parameter
+;                 ; lea   R9, [REL Written]                        ; 4th parameter
+;                 ; mov   qword [RSP + 4 * 8], NULL                ; 5th parameter
+;                 ; call  WriteFile                                ; Output can be redirect to a file using >
+;                 ; add   RSP, 48                                  ; Remove the 48 bytes
 
-; _printf_caller:
-        
+;                 ; xor   ECX, ECX
+;                 ; call  ExitProcess
 
-       
-;         ; call printf
-;         ; mov byte [rdi], 0
-;         push rdi
-;         call _strlen
-;         pop rdi
-;         mov rsi, rdi
-;         mov rdx, rax
-;         mov rax, 1
-;         mov rdi, STDOUT
-        
-;         syscall
-
-
-
-        
-
-;         ret
-
-
-std_printf:
-                pop r10
-                mov qword [printfSaveBp], r10
-                pop r10
-                mov qword [printfRetAddr], r10
+;                 ; push 123
+;                 ; mov rdi, buff
+;                 ; call itoad
+;                 ; add rsp, 4
+;                 ; call dropbuff
                 
-                push r9
-                push r8
-                push rcx
-                push rdx
-                push rsi
-                push rdi
+;                 ; push qword msg
+;                 ; push qword 'p'
+;                 ; push qword 'b'
+;                 ; push qword 'c'
+;                 ; push qword 'd'
+;                 ; push qword octm
+;                 ; push qword 4294967295 
+;                 ; push qword 'e'
+;                 ; push qword 15314323
+;                 ; push qword 4294967295
+;                 ; push qword 'a'
+;                 ; push qword hexm
+;                 push qword 0FBh
+;                 push qword hexm
+;                 push qword 4294967295
+;                 push qword hexm
+;                 push qword msg
+;                 call printf
+;                 add rsp, 8 * 5
+                
+;                 ; pop rdx
+;                 ; push buff
+;                 ; call _printf
+                
+;                 ret
 
-                xor r10, r10
 
+_printf_caller:
+        pop r10
+        mov qword [printfSaveBp], r10
+        pop r10
+        mov qword [printfRetAddr], r10
+
+        push r8
+        push rdi
+        push rcx
+        push rdx
+        push rsi
+        push rax
+
+        call printf
+
+        pop rax
+        pop rsi
+        pop rdx
+        pop rcx
+        pop rdi
+        pop r8
+
+        push [printfRetAddr]
+        push [printfSaveBp]
+
+        ret
+
+
+printf:
+                sub   RSP, 32                                  ; 32 bytes of shadow space
+                mov   ECX, STD_OUTPUT_HANDLE
+                call  GetStdHandle
+                mov   qword [REL StandardHandle], RAX
+                add   RSP, 32 
+                
+                
                 push rbp                ;making stack frame
                 mov rbp, rsp
                 add rbp, 16              
@@ -83,7 +139,6 @@ std_printf:
                 je .endloop
                 cmp al, '%'
                 jne .standart
-                inc r10
                 ; je .endloop
                 ; xor ecx, ecx
                 ; call ExitProcess
@@ -156,17 +211,19 @@ std_printf:
         .string
                 call dropbuff
                 
-                push rdi
-                mov rdi, [rbp]
-                call _strlen
-                pop rdi
-                
+                mov rcx, [rbp]
+                call lstrlen
+                mov r8, RAX
+                mov rcx, qword [REL StandardHandle]
+                sub rsp, 40
+                mov r9, char_written
 
-                mov rdx, rax
-                mov rax, 1
-                mov rdi, STDOUT
-                mov rsi, [rbp]
-                syscall
+                ; mov rax, qword 0                  
+                mov rdx, [rbp]
+                mov qword [rsp+0x20], 0
+
+                call WriteConsoleA
+                add rsp, 40 
                 ;==========================================================
                         ; call __cputs
                 ; add rsp, byte 8
@@ -202,17 +259,6 @@ std_printf:
                 ; pop rbp
                 pop rbp
                 ; call ExitProcess
-
-                inc r10
-                mov rax, r10
-                mov rcx, 8
-                mul rcx
-                add rsp, rax
-                dec r10
-                mov rax, r10
-                
-                push qword[printfRetAddr]
-                push qword[printfSaveBp]
     ret
 
 ;==========================================================
@@ -221,18 +267,26 @@ std_printf:
 ;==========================================================
 dropbuff:
                 mov byte [rdi], 0
-                push rdi
-                mov rdi, buff
-                call _strlen
-                pop rdi
+                mov rcx, buff
+                call lstrlen
+                mov r8, RAX
+                mov rcx, qword [REL StandardHandle]
+                ; mov rdx, buff
+                ; call
 
+                
+                sub rsp, 40
 
-                mov rdx, rax
-                mov rax, 1
-                mov rdi, STDOUT
-                mov rsi, buff
-                syscall
+                ; mov rcx, 
 
+                mov r9, char_written
+
+                ; mov rax, qword 0                  
+                mov rdx, buff
+                mov qword [rsp+0x20], 0
+
+                call WriteConsoleA
+                add rsp, 40 
                 ; push qword buff
                 ; ;==========================================================
                 ; push STD_OUTPUT_HANDLE
@@ -318,27 +372,6 @@ itoad
                 ret
 
 
-
-_strlen:
-
-                push rbx
-                push rcx
-
-                mov   rbx, rdi            
-                xor   al, al                               
-                mov   rcx, 0xffffffff     
-                                                                
-                repne scasb               ; REPeat while Not Equal [edi] != al
-
-                sub   rdi, rbx            ; length = offset of (edi - ebx)
-                mov   rax, rdi            
-
-                pop rbx
-                pop rcx
-                ret 
-
-
-
 section .data
 itoa_symbols_table   db "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 decm                db "/decm/", 0
@@ -366,15 +399,15 @@ STD_OUTPUT_HANDLE   equ -11
 STD_INPUT_HANDLE    equ -10
 
 printf_switch: 
-                            dq std_printf.bin
-                            dq std_printf.char
-                            dq std_printf.decimal
-                times 3d    dq std_printf.standart
-                            dq std_printf.hex
-                times 6d    dq std_printf.standart
-                            dq std_printf.oct
-                times 3d    dq std_printf.standart
-                            dq std_printf.string
+                            dq printf.bin
+                            dq printf.char
+                            dq printf.decimal
+                times 3d    dq printf.standart
+                            dq printf.hex
+                times 6d    dq printf.standart
+                            dq printf.oct
+                times 3d    dq printf.standart
+                            dq printf.string
 
 section .bss
 printfRetAddr resq 1
