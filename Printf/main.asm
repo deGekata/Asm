@@ -59,11 +59,13 @@ std_printf:
                 push rsi
                 push rdi
 
+                mov rbp, rsp
+
                 xor r10, r10
 
-                push rbp                ;making stack frame
-                mov rbp, rsp
-                add rbp, 16              
+                ; push rbp                ;making stack frame
+                ; mov rbp, rsp
+                ; add rbp, 16              
 
                 xor rdx, rdx            
                 mov rdi, buff           ;init buff
@@ -78,6 +80,7 @@ std_printf:
 
     .loop:      
                 xor rdx, rdx
+                xor rax, rax
                 lodsb
                 cmp al, 0
                 je .endloop
@@ -161,12 +164,13 @@ std_printf:
                 call _strlen
                 pop rdi
                 
-
+                push rsi
                 mov rdx, rax
                 mov rax, 1
                 mov rdi, STDOUT
                 mov rsi, [rbp]
                 syscall
+                pop rsi
                 ;==========================================================
                         ; call __cputs
                 ; add rsp, byte 8
@@ -200,17 +204,22 @@ std_printf:
                 call dropbuff
 
                 ; pop rbp
-                pop rbp
+                ; pop rbp
                 ; call ExitProcess
 
                 inc r10
+                cmp r10, 6
+                jge .args_gr_six
+                add rsp, 8 * 6
+                jmp .skip_to_ret
+        .args_gr_six
                 mov rax, r10
                 mov rcx, 8
                 mul rcx
                 add rsp, rax
                 dec r10
                 mov rax, r10
-                
+.skip_to_ret
                 push qword[printfRetAddr]
                 push qword[printfSaveBp]
     ret
@@ -226,12 +235,13 @@ dropbuff:
                 call _strlen
                 pop rdi
 
-
+                push rsi
                 mov rdx, rax
                 mov rax, 1
                 mov rdi, STDOUT
                 mov rsi, buff
                 syscall
+                pop rsi
 
                 ; push qword buff
                 ; ;==========================================================
